@@ -1,0 +1,36 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    @apply box-border;
+  }
+
+  body {
+    @apply scroll-smooth;
+  }
+
+  html {
+    @apply 2sm:text-[75%] sm:text-[87.5%] md:text-[93.75%] lg:text-[100%] scroll-smooth;
+  }
+}
+
+@layer utilities {
+  .personalized-scrollbar::-webkit-scrollbar {
+    width: 4px;
+    height: 8px;
+  }
+  .personalized-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .personalized-scrollbar::-webkit-scrollbar-thumb {
+    background: #666666;
+    border-radius: 999px;
+  }
+
+  .personalized-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #555;
+  }
+}
