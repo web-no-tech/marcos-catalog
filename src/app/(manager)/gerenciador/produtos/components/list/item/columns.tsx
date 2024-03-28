@@ -5,10 +5,7 @@ export function ItemColumns(props: PropsWithChildren<ComponentProps<'div'>>) {
   const { children, className, ...rest } = props
 
   return (
-    <div
-      className={twMerge('flex-1 grid grid-cols-4 gap-8', className)}
-      {...rest}
-    >
+    <div className={twMerge('flex gap-6 w-full', className)} {...rest}>
       {children}
     </div>
   )

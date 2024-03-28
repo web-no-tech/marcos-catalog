@@ -1,15 +1,21 @@
 'use client'
 
-import { ReactElement } from 'react'
+import { ReactElement, useEffect, useState } from 'react'
 
 import { Button } from '@/app/components/button'
 
-import { LuPlusCircle, LuSearch, LuUpload, LuXCircle } from 'react-icons/lu'
+import {
+  LuFileEdit,
+  LuPlusCircle,
+  LuSearch,
+  LuTrash,
+  LuUpload,
+  LuXCircle,
+} from 'react-icons/lu'
 import { z } from 'zod'
 import { Controller, FormProvider, useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import Image from 'next/image'
-import { currencyToNumber } from '@/utils/currency-to-number'
 import { useDeleteProductModal } from './hooks/use-delete-product-modal'
 import { useProductFormModal } from './hooks/use-product-form-modal'
 import { Select } from '../components/select'
@@ -19,8 +25,12 @@ import { PodForm } from './components/form/pod'
 import { podSchema } from './components/form/pod/schema'
 import { Category } from '@/constants/Category'
 import { firebaseDb, firebaseStorage } from '@/lib/firebase'
-import { addDoc, collection } from 'firebase/firestore'
-import { ref, uploadBytes } from 'firebase/storage'
+import { addDoc, collection, deleteDoc, doc, getDocs } from 'firebase/firestore'
+import { getDownloadURL, ref, uploadBytes } from 'firebase/storage'
+import { currencyToNumber } from '@/utils/currency-to-number'
+import { BaseProduct } from '../domain/BaseProduct'
+import List from './components/list'
+import { priceFormatter } from '@/utils/price-formatter'
 
 const productSchema = z.object({
   amount: z
@@ -32,9 +42,7 @@ const productSchema = z.object({
   finalPrice: z
     .string({ required_error: 'Insira o valor de venda do produto' })
     .min(1, 'Insira o valor de venda do produto'),
-  images: z
-    .array(z.object({ url: z.string(), name: z.string() }))
-    .min(1, 'Adicione imagens do produto'),
+  images: z.array(z.custom<File>()).min(1, 'Adicione imagens do produto'),
   category: z.object(
     {
       label: z.string(),
@@ -59,27 +67,60 @@ interface CreateProductData extends Partial<CreatePodData> {
   costPrice: number
   finalPrice: number
   category: Category
+  images: string[]
 }
 
-async function uploadProductImage(image: any) {
+async function uploadProductImage(image: File) {
   const uploadedFile = await uploadBytes(
-    ref(firebaseStorage, 'product/' + image.name),
-    image.url,
+    ref(firebaseStorage, `product/${Date.now()}-${image.name}`),
+    image,
   )
-
-  console.log(uploadedFile)
+  return uploadedFile.metadata
 }
 
 function createProductRequest(data: CreateProductData) {
-  return addDoc(collection(firebaseDb, `products`), data)
+  return addDoc(collection(firebaseDb, 'products'), data)
+}
+
+function deleteProductRequest(productId: string) {
+  return deleteDoc(doc(firebaseDb, 'products/' + productId))
+}
+
+async function getProductsRequest() {
+  const snapshot = await getDocs(collection(firebaseDb, 'products'))
+
+  const productsWithImages = []
+
+  for (const doc of snapshot.docs) {
+    const baseProduct = {
+      ...(doc.data() as BaseProduct),
+      id: doc.id,
+    }
+
+    const images = await Promise.all(
+      doc.get('images').map(async (image: string) => {
+        const storageRef = ref(firebaseStorage, image)
+        return getDownloadURL(storageRef)
+      }),
+    )
+
+    productsWithImages.push({
+      ...baseProduct,
+      images,
+    })
+  }
+
+  return productsWithImages
 }
 
 export function ProductsContent() {
+  const [products, setProducts] = useState<BaseProduct[]>([])
+
   const {
     deleteProductModalRef,
-    // openDeleteProductModal,
     closeDeleteProductModal,
     toDeleteProduct,
+    openDeleteProductModal,
   } = useDeleteProductModal()
 
   const {
@@ -100,7 +141,7 @@ export function ProductsContent() {
     control,
     watch,
     setValue,
-    // reset,
+    reset,
   } = productForm
 
   const { amountError } = {
@@ -112,28 +153,34 @@ export function ProductsContent() {
     productImages: watch('images'),
   }
 
-  const onSubmitProductForm = async (event) => {
-    event.preventDefault()
-    // const toUpdateProductId = toUpdateProduct.data?.id
-    // const normalizedProduct: CreateProductData = {
-    //   costPrice: currencyToNumber(data.costPrice),
-    //   finalPrice: currencyToNumber(data.finalPrice),
-    //   amount: parseInt(data.amount),
-    //   category: data.category.value,
-    //   flavor: data.flavor.label,
-    //   manufacturer: data.manufacturer.label,
-    //   puffs: data.puffs,
-    // }
+  const onSubmitProductForm = async (data: ProductForm) => {
+    const uploadProductImagePromises = data.images.map((image) =>
+      uploadProductImage(image),
+    )
 
-    await uploadProductImage(productImages[0])
+    const uploadedProductImages = await Promise.all(uploadProductImagePromises)
 
-    // if (toUpdateProductId) {
-    //   // Update product implementation
-    // }
-    // if (!toUpdateProductId) {
-    //   await createProductRequest(normalizedProduct)
-    // }
-    // closeProductFormModal()
+    const toUpdateProductId = toUpdateProduct.data?.id
+    const normalizedProduct: CreateProductData = {
+      costPrice: currencyToNumber(data.costPrice),
+      finalPrice: currencyToNumber(data.finalPrice),
+      amount: parseInt(data.amount),
+      category: data.category.value,
+      flavor: data.flavor.label,
+      manufacturer: data.manufacturer.label,
+      puffs: data.puffs,
+      model: data.model?.label,
+      images: uploadedProductImages.map((image) => image.fullPath),
+    }
+
+    if (toUpdateProductId) {
+      // Update product implementation
+    }
+    if (!toUpdateProductId) {
+      await createProductRequest(normalizedProduct)
+    }
+    handleGetProducts()
+    closeProductFormModal()
   }
 
   const onCloseProductFormModal = () => {
@@ -144,28 +191,63 @@ export function ProductsContent() {
     return openProductFormModal()
   }
 
-  // const handleOpenDeleteProductFormModal = (product: Pod) => {
-  //   toDeleteProduct.set(product)
-  //   return openDeleteProductModal()
-  // }
+  const handleOpenDeleteProductFormModal = (product: BaseProduct) => {
+    toDeleteProduct.set(product)
+    return openDeleteProductModal()
+  }
+
+  const handleOpenUpdateProductFormModal = (product: BaseProduct) => {
+    toUpdateProduct.set(product)
+    return openProductFormModal()
+  }
 
   const handleDeleteProduct = () => {
     const toDeleteProductId = toDeleteProduct.data?.id
     if (toDeleteProductId) {
-      // Delete product implementation
+      deleteProductRequest(toDeleteProductId)
+      handleGetProducts()
     }
     return closeDeleteProductModal()
+  }
+
+  const handleGetProducts = async () => {
+    const loadedProducts = await getProductsRequest()
+    return setProducts(loadedProducts)
   }
 
   const renderCategoryForm = () => {
     if (!productCategory) return
 
-    const categoryForm: Record<Category, ReactElement> = {
-      pod: <PodForm />,
+    const categoryForm: Record<string, ReactElement> = {
+      Pod: <PodForm />,
     }
 
     return categoryForm[productCategory]
   }
+
+  useEffect(() => {
+    handleGetProducts()
+  }, [])
+
+  useEffect(() => {
+    if (toUpdateProduct) {
+      reset({
+        amount: toUpdateProduct.data?.amount,
+        category: toUpdateProduct.data?.category && {
+          label: toUpdateProduct.data?.category,
+          value: toUpdateProduct.data?.category,
+        },
+        costPrice: toUpdateProduct.data?.costPrice,
+        finalPrice: toUpdateProduct.data?.costPrice,
+        puffs: toUpdateProduct.data?.puffs,
+        images: toUpdateProduct.data?.images,
+        flavor: toUpdateProduct.data?.flavor && {
+          label: toUpdateProduct.data?.flavor,
+          value: toUpdateProduct.data?.flavor,
+        },
+      })
+    }
+  }, [toUpdateProduct])
 
   return (
     <>
@@ -188,19 +270,16 @@ export function ProductsContent() {
           </Button>
         </nav>
 
-        {/* <List.Root>
+        <List.Root>
           {products.map((product) => (
             <List.Item.Root key={product.id}>
-              <List.Item.Slider images={product.images} />
+              <List.Item.Slider
+                images={product.images.map((image) => ({
+                  url: image,
+                }))}
+              />
 
               <List.Item.Columns>
-                <List.Item.Column.Root>
-                  <List.Item.Column.Title>Estoque</List.Item.Column.Title>
-                  <List.Item.Column.Content>
-                    {product.amount}
-                  </List.Item.Column.Content>
-                </List.Item.Column.Root>
-
                 <List.Item.Column.Root>
                   <List.Item.Column.Title>Valor</List.Item.Column.Title>
                   <List.Item.Column.Content>
@@ -208,34 +287,39 @@ export function ProductsContent() {
                   </List.Item.Column.Content>
                 </List.Item.Column.Root>
 
-                <List.Item.Column.Root className="items-end justify-center gap-3">
-                  <Button
-                    variant={{ colors: 'primary' }}
-                    className="w-40"
-                    onClick={() => handleOpenProductFormModal(product)}
-                  >
-                    <LuFileEdit />
-                    Editar
-                  </Button>
-                  <Button
-                    variant={{ colors: 'danger' }}
-                    className="w-40"
-                    onClick={() => handleOpenDeleteProductFormModal(product)}
-                  >
-                    <LuTrash />
-                    Remover
-                  </Button>
+                <List.Item.Column.Root>
+                  <List.Item.Column.Title>Estoque</List.Item.Column.Title>
+                  <List.Item.Column.Content>
+                    {product.amount}
+                  </List.Item.Column.Content>
                 </List.Item.Column.Root>
               </List.Item.Columns>
+
+              <div className="flex w-full flex-col gap-2">
+                <Button
+                  variant={{ colors: 'primary', sizes: 'md', layout: 'fill' }}
+                  onClick={() => handleOpenUpdateProductFormModal(product)}
+                >
+                  <LuFileEdit className="text-lg" />
+                  Editar
+                </Button>
+                <Button
+                  variant={{ colors: 'danger', sizes: 'md', layout: 'fill' }}
+                  onClick={() => handleOpenDeleteProductFormModal(product)}
+                >
+                  <LuTrash className="text-lg" />
+                  Remover
+                </Button>
+              </div>
             </List.Item.Root>
           ))}
-        </List.Root> */}
+        </List.Root>
       </section>
 
       <dialog
         ref={productFormModalRef}
         className="personalized-scrollbar display-none w-2/5 min-w-96 max-w-[35rem] flex-col gap-4 overflow-visible rounded-lg p-6 shadow-md outline-none backdrop:bg-neutral-700/40 backdrop:backdrop-blur-sm open:flex open:opacity-100"
-        onSubmit={onSubmitProductForm}
+        onSubmit={handleSubmit(onSubmitProductForm)}
         onClose={onCloseProductFormModal}
       >
         <header className="flex items-center justify-between border-b border-b-neutral-200 pb-4">
@@ -361,23 +445,16 @@ export function ProductsContent() {
 
                           if (!files) return
 
-                          const formattedFiles = Array.from(files).map(
-                            (file) => ({
-                              name: file.name,
-                              url: URL.createObjectURL(file),
-                            }),
-                          )
-
                           const hasProductImages = !!productImages?.length
 
                           if (hasProductImages) {
                             return onChange([
                               ...productImages,
-                              ...formattedFiles,
+                              ...Array.from(files),
                             ])
                           }
 
-                          return onChange(formattedFiles)
+                          return onChange(Array.from(files))
                         }}
                       />
                     </Input.Border>
@@ -392,7 +469,11 @@ export function ProductsContent() {
                 {productImages.map((image) => {
                   return (
                     <div
-                      key={image}
+                      key={
+                        Date.now() + toUpdateProduct
+                          ? image
+                          : JSON.stringify(URL.createObjectURL(image))
+                      }
                       className="relative max-h-28 min-h-28 min-w-28 max-w-28 rounded border border-neutral-200 bg-neutral-100"
                     >
                       <button
@@ -413,7 +494,7 @@ export function ProductsContent() {
                         fill
                         alt="Imagem do produto"
                         src={
-                          'https://firebasestorage.googleapis.com/v0/b/marcos-catalog.appspot.com/o/product%2FScreenshot%20from%202024-02-28%2014-22-49.png?alt=media&token=83974ab8-86b8-43e8-9d6f-0bbbac4c6a2c'
+                          toUpdateProduct ? image : URL.createObjectURL(image)
                         }
                         className="object-contain"
                       />
@@ -454,10 +535,7 @@ export function ProductsContent() {
         </header>
 
         <div className="min-h-28 flex-1">
-          <p>
-            Tem certeza que deseja remover o produto{' '}
-            <strong>{toDeleteProduct.data?.id}</strong>?
-          </p>
+          <p>Tem certeza que deseja remover este produto?</p>
         </div>
 
         <footer className="flex gap-2">

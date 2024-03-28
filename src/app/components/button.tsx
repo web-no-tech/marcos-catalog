@@ -13,7 +13,7 @@ const button = tv({
       md: 'min-w-56 px-6 py-[0.75rem]',
     },
     layout: {
-      fill: 'flex-1',
+      fill: 'w-full',
     },
   },
 })

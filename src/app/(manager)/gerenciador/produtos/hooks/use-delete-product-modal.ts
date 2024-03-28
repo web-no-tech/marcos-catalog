@@ -5,15 +5,15 @@ import {
   useRef,
   useState,
 } from 'react'
-import { Product } from '../../domain/BaseProduct'
+import { BaseProduct } from '../../domain/BaseProduct'
 
 interface DeleteProductModalData {
   deleteProductModalRef: MutableRefObject<HTMLDialogElement | null>
   openDeleteProductModal: () => void
   closeDeleteProductModal: () => void
   toDeleteProduct: {
-    data: Product | null
-    set: Dispatch<SetStateAction<Product | null>>
+    data: BaseProduct | null
+    set: Dispatch<SetStateAction<BaseProduct | null>>
   }
 }
 
@@ -21,7 +21,7 @@ export function useDeleteProductModal(): DeleteProductModalData {
   const deleteProductModalRef = useRef<HTMLDialogElement>(null)
 
   const [toDeleteProductData, setToDeleteProductData] =
-    useState<Product | null>(null)
+    useState<BaseProduct | null>(null)
 
   const openDeleteProductModal = () => {
     return deleteProductModalRef.current?.showModal()

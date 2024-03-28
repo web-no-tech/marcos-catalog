@@ -10,7 +10,7 @@ export function ItemRoot(props: PropsWithChildren<ComponentProps<'li'>>) {
   return (
     <li
       className={twMerge(
-        'w-full p-4 rounded-lg border border-neutral-200 flex gap-6',
+        'p-4 rounded-lg border border-neutral-200 flex flex-col gap-6 items-center',
         className,
       )}
       {...rest}
