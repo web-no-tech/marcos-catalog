@@ -8,12 +8,10 @@ export const podSchema = {
     },
     { required_error: 'Selecione a marca do pod' },
   ),
-  model: z
-    .object({
-      label: z.string(),
-      value: z.string(),
-    })
-    .optional(),
+  model: z.object({
+    label: z.string(),
+    value: z.string(),
+  }),
   puffs: z
     .string({ required_error: 'Insira os puffs do pod' })
     .min(1, 'Insira os puffs do pod'),

@@ -4,5 +4,6 @@ export interface BaseProduct {
   costPrice: number
   finalPrice: number
   images: string[]
-  category: string
+  category: { name: string; id: string }
+  name: string
 }

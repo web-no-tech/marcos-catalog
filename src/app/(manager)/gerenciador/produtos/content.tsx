@@ -7,7 +7,6 @@ import { Button } from '@/app/components/button'
 import {
   LuFileEdit,
   LuPlusCircle,
-  LuSearch,
   LuTrash,
   LuUpload,
   LuXCircle,
@@ -25,7 +24,14 @@ import { PodForm } from './components/form/pod'
 import { podSchema } from './components/form/pod/schema'
 import { Category } from '@/constants/Category'
 import { firebaseDb, firebaseStorage } from '@/lib/firebase'
-import { addDoc, collection, deleteDoc, doc, getDocs } from 'firebase/firestore'
+import {
+  addDoc,
+  collection,
+  deleteDoc,
+  doc,
+  getDocs,
+  setDoc,
+} from 'firebase/firestore'
 import { getDownloadURL, ref, uploadBytes } from 'firebase/storage'
 import { currencyToNumber } from '@/utils/currency-to-number'
 import { BaseProduct } from '../domain/BaseProduct'
@@ -56,9 +62,9 @@ const productSchema = z.object({
 export type ProductForm = z.infer<typeof productSchema>
 
 type CreatePodData = {
-  flavor: string
-  manufacturer: string
-  model: string
+  flavor: { name: string; id: string }
+  manufacturer: { name: string; id: string }
+  model: { name: string; id: string }
   puffs: string
 }
 
@@ -66,8 +72,9 @@ interface CreateProductData extends Partial<CreatePodData> {
   amount: number
   costPrice: number
   finalPrice: number
-  category: Category
+  category: { name: string; id: string }
   images: string[]
+  name: string
 }
 
 async function uploadProductImage(image: File) {
@@ -80,6 +87,11 @@ async function uploadProductImage(image: File) {
 
 function createProductRequest(data: CreateProductData) {
   return addDoc(collection(firebaseDb, 'products'), data)
+}
+
+function updateProductRequest(id: string, data: CreateProductData) {
+  const product = doc(firebaseDb, 'products', id)
+  return setDoc(product, data)
 }
 
 function deleteProductRequest(productId: string) {
@@ -149,14 +161,17 @@ export function ProductsContent() {
   }
 
   const { productCategory, productImages } = {
-    productCategory: watch('category')?.value,
+    productCategory: watch('category')?.label,
     productImages: watch('images'),
   }
 
   const onSubmitProductForm = async (data: ProductForm) => {
-    const uploadProductImagePromises = data.images.map((image) =>
-      uploadProductImage(image),
-    )
+    const uploadProductImagePromises = data.images.map((image) => {
+      if (typeof image === 'string') {
+        return Promise.resolve(image)
+      }
+      return uploadProductImage(image)
+    })
 
     const uploadedProductImages = await Promise.all(uploadProductImagePromises)
 
@@ -165,16 +180,31 @@ export function ProductsContent() {
       costPrice: currencyToNumber(data.costPrice),
       finalPrice: currencyToNumber(data.finalPrice),
       amount: parseInt(data.amount),
-      category: data.category.value,
-      flavor: data.flavor.label,
-      manufacturer: data.manufacturer.label,
       puffs: data.puffs,
-      model: data.model?.label,
-      images: uploadedProductImages.map((image) => image.fullPath),
+      name: `${data.manufacturer.label} ${data.model.label} ${data.puffs} puffs - ${data.flavor.label}`,
+      images: uploadedProductImages.map((image) =>
+        typeof image === 'string' ? image : image.fullPath,
+      ),
+      category: {
+        name: data.category.label,
+        id: data.category.value,
+      },
+      flavor: {
+        name: data.flavor.label,
+        id: data.flavor.value,
+      },
+      manufacturer: {
+        name: data.manufacturer.label,
+        id: data.manufacturer.value,
+      },
+      model: {
+        name: data.model.label,
+        id: data.model.value,
+      },
     }
 
     if (toUpdateProductId) {
-      // Update product implementation
+      await updateProductRequest(toUpdateProductId, normalizedProduct)
     }
     if (!toUpdateProductId) {
       await createProductRequest(normalizedProduct)
@@ -230,37 +260,38 @@ export function ProductsContent() {
   }, [])
 
   useEffect(() => {
-    if (toUpdateProduct) {
-      reset({
-        amount: toUpdateProduct.data?.amount,
-        category: toUpdateProduct.data?.category && {
-          label: toUpdateProduct.data?.category,
-          value: toUpdateProduct.data?.category,
-        },
-        costPrice: toUpdateProduct.data?.costPrice,
-        finalPrice: toUpdateProduct.data?.costPrice,
-        puffs: toUpdateProduct.data?.puffs,
-        images: toUpdateProduct.data?.images,
-        flavor: toUpdateProduct.data?.flavor && {
-          label: toUpdateProduct.data?.flavor,
-          value: toUpdateProduct.data?.flavor,
-        },
-      })
-    }
-  }, [toUpdateProduct])
+    reset({
+      amount: toUpdateProduct.data?.amount.toString() ?? null,
+      costPrice: toUpdateProduct.data?.costPrice.toString(),
+      finalPrice: toUpdateProduct.data?.finalPrice.toString(),
+      puffs: toUpdateProduct.data?.puffs,
+      images: toUpdateProduct.data?.images,
+      model: toUpdateProduct.data?.model && {
+        label: toUpdateProduct.data?.model.name,
+        value: toUpdateProduct.data?.model.id,
+      },
+      manufacturer: toUpdateProduct.data?.manufacturer && {
+        label: toUpdateProduct.data?.manufacturer.name,
+        value: toUpdateProduct.data?.manufacturer.id,
+      },
+      category: toUpdateProduct.data?.category && {
+        label: toUpdateProduct.data?.category.name,
+        value: toUpdateProduct.data?.category.id,
+      },
+      flavor: toUpdateProduct.data?.flavor && {
+        label: toUpdateProduct.data?.flavor.name,
+        value: toUpdateProduct.data?.flavor.id,
+      },
+    })
+  }, [toUpdateProduct.data])
 
   return (
     <>
       <section className="flex flex-col gap-6">
         <nav className="flex items-center justify-between">
-          <div className="flex h-12 items-center gap-2 rounded-lg border border-neutral-300 px-4">
-            <input
-              className="border-none bg-none text-base text-neutral-700 outline-none"
-              placeholder="Buscar produto"
-            />
-            <LuSearch className="text-xl text-neutral-500" />
-          </div>
-
+          <h2 className="text-2xl font-semibold text-neutral-700">
+            Lista de Produtos
+          </h2>
           <Button
             variant={{ colors: 'primary', sizes: 'md' }}
             onClick={() => handleOpenProductFormModal()}
@@ -278,6 +309,15 @@ export function ProductsContent() {
                   url: image,
                 }))}
               />
+
+              <List.Item.Columns>
+                <List.Item.Column.Root>
+                  <List.Item.Column.Title>Nome</List.Item.Column.Title>
+                  <List.Item.Column.Content>
+                    {product.name}
+                  </List.Item.Column.Content>
+                </List.Item.Column.Root>
+              </List.Item.Columns>
 
               <List.Item.Columns>
                 <List.Item.Column.Root>
@@ -467,13 +507,10 @@ export function ProductsContent() {
             {productImages && (
               <div className="personalized-scrollbar col-span-2 flex gap-1 overflow-x-auto">
                 {productImages.map((image) => {
+                  const key = crypto.randomUUID()
                   return (
                     <div
-                      key={
-                        Date.now() + toUpdateProduct
-                          ? image
-                          : JSON.stringify(URL.createObjectURL(image))
-                      }
+                      key={key}
                       className="relative max-h-28 min-h-28 min-w-28 max-w-28 rounded border border-neutral-200 bg-neutral-100"
                     >
                       <button
@@ -494,7 +531,9 @@ export function ProductsContent() {
                         fill
                         alt="Imagem do produto"
                         src={
-                          toUpdateProduct ? image : URL.createObjectURL(image)
+                          typeof image === 'string'
+                            ? image
+                            : URL.createObjectURL(image)
                         }
                         className="object-contain"
                       />
@@ -540,14 +579,14 @@ export function ProductsContent() {
 
         <footer className="flex gap-2">
           <Button
-            variant={{ colors: 'danger' }}
+            variant={{ colors: 'primary' }}
             className="h-10 flex-1"
             onClick={closeDeleteProductModal}
           >
             Cancelar
           </Button>
           <Button
-            variant={{ colors: 'primary' }}
+            variant={{ colors: 'danger' }}
             className="h-10 flex-1"
             onClick={handleDeleteProduct}
           >

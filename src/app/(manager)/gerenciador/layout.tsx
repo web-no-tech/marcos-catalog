@@ -1,7 +1,7 @@
 import { Metadata } from 'next'
 import { PropsWithChildren } from 'react'
 import Sidebar from './components/sidebar'
-import { LuBox, LuLineChart, LuLogOut, LuUser } from 'react-icons/lu'
+import { LuBox, LuLineChart, LuMenu, LuUser } from 'react-icons/lu'
 
 export const metadata: Metadata = {
   title: {
@@ -37,7 +37,7 @@ export default function ManagerLayout(props: PropsWithChildren) {
         <Sidebar.Separator />
 
         <Sidebar.List.Root>
-          <Sidebar.List.Item icon={<LuLogOut />} label="Sair" to="/login" />
+          <Sidebar.List.Item icon={<LuMenu />} label="Ver catálogo" to="/" />
         </Sidebar.List.Root>
       </Sidebar.Root>
 
