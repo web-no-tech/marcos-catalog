@@ -510,7 +510,7 @@ export function ProductsContent() {
             />
 
             {productImages && (
-              <div className="personalized-scrollbar col-span-2 flex gap-1 overflow-x-auto">
+              <div className="personalized-scrollbar col-span-2 flex gap-1 overflow-x-auto mobile:col-span-1">
                 {productImages.map((image) => {
                   const key = crypto.randomUUID()
                   return (
