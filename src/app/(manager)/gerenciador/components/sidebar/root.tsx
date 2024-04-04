@@ -1,6 +1,7 @@
 'use client'
 
-import { ComponentProps, PropsWithChildren, useState } from 'react'
+import { usePathname } from 'next/navigation'
+import { ComponentProps, PropsWithChildren, useEffect, useState } from 'react'
 import { LuMenu, LuXCircle } from 'react-icons/lu'
 import { twMerge } from 'tailwind-merge'
 
@@ -8,6 +9,10 @@ export function SidebarRoot(props: PropsWithChildren<ComponentProps<'aside'>>) {
   const { children, className, ...rest } = props
 
   const [isOpen, setIsOpen] = useState(false)
+
+  const pathname = usePathname()
+
+  useEffect(() => setIsOpen(false), [pathname])
 
   return (
     <>

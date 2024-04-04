@@ -6,7 +6,7 @@ import { Button } from '@/app/components/button'
 
 import { LuPlusCircle, LuTrash, LuXCircle } from 'react-icons/lu'
 import { z } from 'zod'
-import { Controller, useForm } from 'react-hook-form'
+import { Controller, useFieldArray, useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useDeleteSaleModal } from './hooks/use-delete-sale-modal'
 import { useSaleFormModal } from './hooks/use-sale-form-modal'
@@ -36,10 +36,10 @@ const saleSchema = z.object({
       amount: z.number(),
       costPrice: z.number(),
       finalPrice: z.number(),
+      purchaseAmount: z.number(),
     }),
     { required_error: 'Selecione pelo menos um produto' },
   ),
-  amount: z.number(),
 })
 
 export type SaleForm = z.infer<typeof saleSchema>
@@ -124,6 +124,19 @@ export function SalesContent() {
     resolver: zodResolver(saleSchema),
   })
 
+  const {
+    handleSubmit,
+    formState: { errors },
+    register,
+    control,
+    watch,
+  } = saleForm
+
+  const { fields, append, remove } = useFieldArray({
+    control,
+    name: 'products',
+  })
+
   const handleGetCustomers = async () => {
     const loadedCustomers = await getNormalizedCustomersRequest()
     return setCustomers(loadedCustomers)
@@ -132,15 +145,6 @@ export function SalesContent() {
     const loadedProducts = await getProductsRequest()
     return setProducts(loadedProducts)
   }
-
-  const {
-    handleSubmit,
-    formState: { errors },
-    register,
-    control,
-    watch,
-    setValue,
-  } = saleForm
 
   const { products: selectedProducts } = watch()
 
@@ -223,8 +227,6 @@ export function SalesContent() {
     handleGetCustomers()
     handleGetProducts()
   }, [])
-
-  useEffect(() => {}, [toUpdateSale.data])
 
   return (
     <>
@@ -438,10 +440,7 @@ export function SalesContent() {
           <Controller
             name="products"
             control={control}
-            render={({
-              field: { onChange, value, ...field },
-              fieldState: { error },
-            }) => {
+            render={({ field: { ref, value }, fieldState: { error } }) => {
               return (
                 <Input.Label>
                   Produtos*
@@ -450,10 +449,10 @@ export function SalesContent() {
                     noOptionsMessage={() => 'Nenhuma opção'}
                     options={products}
                     onChange={(option: Pod) => {
-                      onChange([...(value ?? []), option])
+                      append({ ...option, purchaseAmount: 1 })
                     }}
                     value={value?.length ? value[value.length - 1] : undefined}
-                    {...field}
+                    ref={ref}
                   />
                   {!!error?.message && (
                     <Input.Error>{error.message}</Input.Error>
@@ -465,15 +464,21 @@ export function SalesContent() {
 
           {selectedProducts && (
             <ul className="col-span-2 flex flex-col gap-4 mobile:col-span-1">
-              {selectedProducts.map((product) => (
+              {fields.map((product, index) => (
                 <li
                   key={crypto.randomUUID()}
                   className="flex items-center justify-between gap-6"
                 >
-                  {product.name}
+                  <span className="flex items-center gap-2">
+                    <button onClick={() => remove(index)}>
+                      <LuTrash />
+                    </button>
+                    {product.name}
+                  </span>
 
                   <Controller
-                    name="amount"
+                    key={product.id}
+                    name={`products.${index}.purchaseAmount`}
                     control={control}
                     render={({ field: { onChange, ...field } }) => {
                       return (
@@ -483,18 +488,11 @@ export function SalesContent() {
                             max={product.amount}
                             type="number"
                             onChange={(event) => {
-                              setValue('products', [
-                                ...(selectedProducts.filter(
-                                  (_product) => _product.id !== product.id,
-                                ) as ProductPreview[]),
-                                {
-                                  ...(selectedProducts.find(
-                                    (_product) => _product.id === product.id,
-                                  ) as ProductPreview),
-                                  amount: parseInt(event.target.value),
-                                },
-                              ])
-                              onChange(parseInt(event.target.value))
+                              onChange(
+                                event.target.value
+                                  ? parseInt(event.target.value)
+                                  : '',
+                              )
                             }}
                             {...field}
                           />
