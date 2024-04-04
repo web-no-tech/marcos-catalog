@@ -22,7 +22,6 @@ import * as Input from '../components/input'
 import { PodForm } from './components/form/pod'
 
 import { podSchema } from './components/form/pod/schema'
-import { Category } from '@/constants/Category'
 import { firebaseDb, firebaseStorage } from '@/lib/firebase'
 import {
   addDoc,
@@ -37,6 +36,7 @@ import { currencyToNumber } from '@/utils/currency-to-number'
 import { BaseProduct } from '../domain/BaseProduct'
 import List from './components/list'
 import { priceFormatter } from '@/utils/price-formatter'
+import { Pod } from '../domain/Pod'
 
 const productSchema = z.object({
   amount: z
@@ -52,7 +52,7 @@ const productSchema = z.object({
   category: z.object(
     {
       label: z.string(),
-      value: z.nativeEnum(Category),
+      value: z.string(),
     },
     { required_error: 'Selecione a categoria do produto' },
   ),
@@ -105,7 +105,7 @@ async function getProductsRequest() {
 
   for (const doc of snapshot.docs) {
     const baseProduct = {
-      ...(doc.data() as BaseProduct),
+      ...(doc.data() as Pod),
       id: doc.id,
     }
 
@@ -126,7 +126,7 @@ async function getProductsRequest() {
 }
 
 export function ProductsContent() {
-  const [products, setProducts] = useState<BaseProduct[]>([])
+  const [products, setProducts] = useState<Pod[]>([])
 
   const {
     deleteProductModalRef,
@@ -226,7 +226,7 @@ export function ProductsContent() {
     return openDeleteProductModal()
   }
 
-  const handleOpenUpdateProductFormModal = (product: BaseProduct) => {
+  const handleOpenUpdateProductFormModal = (product: Pod) => {
     toUpdateProduct.set(product)
     return openProductFormModal()
   }
@@ -261,11 +261,12 @@ export function ProductsContent() {
 
   useEffect(() => {
     reset({
-      amount: toUpdateProduct.data?.amount.toString() ?? null,
+      amount: toUpdateProduct.data?.amount.toString(),
       costPrice: toUpdateProduct.data?.costPrice.toString(),
       finalPrice: toUpdateProduct.data?.finalPrice.toString(),
       puffs: toUpdateProduct.data?.puffs,
-      images: toUpdateProduct.data?.images,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      images: toUpdateProduct.data?.images as any,
       model: toUpdateProduct.data?.model && {
         label: toUpdateProduct.data?.model.name,
         value: toUpdateProduct.data?.model.id,

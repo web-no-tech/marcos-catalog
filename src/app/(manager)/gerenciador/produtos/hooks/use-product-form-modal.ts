@@ -5,23 +5,24 @@ import {
   useRef,
   useState,
 } from 'react'
-import { Product } from '../../domain/BaseProduct'
+import { Pod } from '../../domain/Pod'
 
 interface ProductFormModalData {
   productFormModalRef: MutableRefObject<HTMLDialogElement | null>
   openProductFormModal: () => void
   closeProductFormModal: () => void
   toUpdateProduct: {
-    data: Product | null
-    set: Dispatch<SetStateAction<Product | null>>
+    data: Pod | null
+    set: Dispatch<SetStateAction<Pod | null>>
   }
 }
 
 export function useProductFormModal(): ProductFormModalData {
   const productFormModalRef = useRef<HTMLDialogElement>(null)
 
-  const [toUpdateProductData, setToUpdateProductData] =
-    useState<Product | null>(null)
+  const [toUpdateProductData, setToUpdateProductData] = useState<Pod | null>(
+    null,
+  )
 
   const openProductFormModal = () => {
     return productFormModalRef.current?.showModal()
