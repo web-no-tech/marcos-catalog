@@ -9,6 +9,7 @@ const config: Config = {
   theme: {
     extend: {
       screens: {
+        mobile: { max: '640px' },
         '2sm': '580px',
       },
     },

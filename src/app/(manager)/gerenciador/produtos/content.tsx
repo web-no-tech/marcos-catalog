@@ -288,13 +288,14 @@ export function ProductsContent() {
   return (
     <>
       <section className="flex flex-col gap-6">
-        <nav className="flex items-center justify-between">
+        <nav className="flex items-center justify-between mobile:flex-col mobile:items-start mobile:gap-6">
           <h2 className="text-2xl font-semibold text-neutral-700">
             Lista de Produtos
           </h2>
           <Button
             variant={{ colors: 'primary', sizes: 'md' }}
             onClick={() => handleOpenProductFormModal()}
+            className="mobile:w-full"
           >
             <LuPlusCircle className="text-lg" />
             Novo produto
@@ -358,7 +359,7 @@ export function ProductsContent() {
 
       <dialog
         ref={productFormModalRef}
-        className="personalized-scrollbar display-none w-2/5 min-w-96 max-w-[35rem] flex-col gap-4 overflow-visible rounded-lg p-6 shadow-md outline-none backdrop:bg-neutral-700/40 backdrop:backdrop-blur-sm open:flex open:opacity-100"
+        className="personalized-scrollbar display-none w-2/5 min-w-96 max-w-[35rem] flex-col gap-4 overflow-auto rounded-lg p-6 shadow-md outline-none backdrop:bg-neutral-700/40 backdrop:backdrop-blur-sm open:flex open:opacity-100"
         onSubmit={handleSubmit(onSubmitProductForm)}
         onClose={onCloseProductFormModal}
       >
@@ -370,7 +371,10 @@ export function ProductsContent() {
         </header>
 
         <FormProvider {...productForm}>
-          <form id="product-form" className="grid flex-1 grid-cols-2 gap-3">
+          <form
+            id="product-form"
+            className="grid flex-1 grid-cols-2 gap-3 mobile:grid-cols-1"
+          >
             <Controller
               name="costPrice"
               control={control}
@@ -469,7 +473,7 @@ export function ProductsContent() {
                 fieldState: { error },
               }) => {
                 return (
-                  <Input.Label className="col-span-2">
+                  <Input.Label className="col-span-2 mobile:col-span-1">
                     <Input.Border className="justify-center hover:cursor-pointer">
                       <LuUpload />
                       Adicionar imagens
@@ -545,7 +549,7 @@ export function ProductsContent() {
           </form>
         </FormProvider>
 
-        <footer className="flex gap-2">
+        <footer className="flex gap-2 mobile:flex-col">
           <Button
             variant={{ colors: 'danger', sizes: 'md', layout: 'fill' }}
             onClick={closeProductFormModal}

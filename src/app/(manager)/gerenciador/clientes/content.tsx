@@ -6,7 +6,7 @@ import { Button } from '@/app/components/button'
 
 import { LuFileEdit, LuPlusCircle, LuTrash, LuXCircle } from 'react-icons/lu'
 import { z } from 'zod'
-import { FormProvider, useForm } from 'react-hook-form'
+import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useDeleteCustomerModal } from './hooks/use-delete-customer-modal'
 import { useCustomerFormModal } from './hooks/use-customer-form-modal'
@@ -191,13 +191,14 @@ export function CustomersContent() {
   return (
     <>
       <section className="flex flex-col gap-6">
-        <nav className="flex items-center justify-between">
+        <nav className="flex items-center justify-between mobile:flex-col mobile:items-start mobile:gap-6">
           <h2 className="text-2xl font-semibold text-neutral-700">
             Lista de Clientes
           </h2>
           <Button
             variant={{ colors: 'primary', sizes: 'md' }}
             onClick={() => handleOpenCustomerFormModal()}
+            className="mobile:w-full"
           >
             <LuPlusCircle className="text-lg" />
             Novo cliente
@@ -246,8 +247,7 @@ export function CustomersContent() {
 
       <dialog
         ref={customerFormModalRef}
-        className="personalized-scrollbar display-none w-2/5 min-w-96 max-w-[35rem] flex-col gap-4 overflow-visible rounded-lg p-6 shadow-md outline-none backdrop:bg-neutral-700/40 backdrop:backdrop-blur-sm open:flex open:opacity-100"
-        onSubmit={handleSubmit(onSubmitCustomerForm)}
+        className="personalized-scrollbar display-none w-2/5 min-w-96 max-w-[35rem] flex-col gap-4 overflow-auto rounded-lg p-6 shadow-md outline-none backdrop:bg-neutral-700/40 backdrop:backdrop-blur-sm open:flex open:opacity-100"
         onClose={onCloseCustomerFormModal}
       >
         <header className="flex items-center justify-between border-b border-b-neutral-200 pb-4">
@@ -257,138 +257,134 @@ export function CustomersContent() {
           </button>
         </header>
 
-        <FormProvider {...customerForm}>
-          <form id="customer-form" className="grid flex-1 grid-cols-2 gap-3">
-            <Input.Label>
-              Nome*
-              <Input.Border>
-                <Input.Text placeholder="Insira o nome" {...register('name')} />
-              </Input.Border>
-              {!!nameError && (
-                <Input.Error className="text-xs font-medium text-red-600">
-                  {nameError}
-                </Input.Error>
-              )}
-            </Input.Label>
+        <form
+          id="customer-form"
+          className="grid flex-1 grid-cols-2 gap-3 mobile:grid-cols-1"
+          onSubmit={handleSubmit(onSubmitCustomerForm)}
+        >
+          <Input.Label>
+            Nome*
+            <Input.Border>
+              <Input.Text placeholder="Insira o nome" {...register('name')} />
+            </Input.Border>
+            {!!nameError && (
+              <Input.Error className="text-xs font-medium text-red-600">
+                {nameError}
+              </Input.Error>
+            )}
+          </Input.Label>
 
-            <Input.Label>
-              Telefone*
-              <Input.Border>
-                <Input.Text
-                  placeholder="Insira o telefone"
-                  {...register('phone')}
-                />
-              </Input.Border>
-              {!!phoneError && (
-                <Input.Error className="text-xs font-medium text-red-600">
-                  {phoneError}
-                </Input.Error>
-              )}
-            </Input.Label>
+          <Input.Label>
+            Telefone*
+            <Input.Border>
+              <Input.Text
+                placeholder="Insira o telefone"
+                {...register('phone')}
+              />
+            </Input.Border>
+            {!!phoneError && (
+              <Input.Error className="text-xs font-medium text-red-600">
+                {phoneError}
+              </Input.Error>
+            )}
+          </Input.Label>
 
-            <Input.Label>
-              CPF
-              <Input.Border>
-                <Input.Text
-                  placeholder="Insira o CPF"
-                  {...register('document')}
-                />
-              </Input.Border>
-            </Input.Label>
+          <Input.Label>
+            CPF
+            <Input.Border>
+              <Input.Text
+                placeholder="Insira o CPF"
+                {...register('document')}
+              />
+            </Input.Border>
+          </Input.Label>
 
-            <Input.Label>
-              Estado*
-              <Input.Border>
-                <Input.Text
-                  placeholder="Insira o estado"
-                  {...register('federalUnit')}
-                />
-              </Input.Border>
-              {!!federalUnitError && (
-                <Input.Error className="text-xs font-medium text-red-600">
-                  {federalUnitError}
-                </Input.Error>
-              )}
-            </Input.Label>
+          <Input.Label>
+            Estado*
+            <Input.Border>
+              <Input.Text
+                placeholder="Insira o estado"
+                {...register('federalUnit')}
+              />
+            </Input.Border>
+            {!!federalUnitError && (
+              <Input.Error className="text-xs font-medium text-red-600">
+                {federalUnitError}
+              </Input.Error>
+            )}
+          </Input.Label>
 
-            <Input.Label>
-              Cidade*
-              <Input.Border>
-                <Input.Text
-                  placeholder="Insira o cidade"
-                  {...register('city')}
-                />
-              </Input.Border>
-              {!!cityError && (
-                <Input.Error className="text-xs font-medium text-red-600">
-                  {cityError}
-                </Input.Error>
-              )}
-            </Input.Label>
+          <Input.Label>
+            Cidade*
+            <Input.Border>
+              <Input.Text placeholder="Insira o cidade" {...register('city')} />
+            </Input.Border>
+            {!!cityError && (
+              <Input.Error className="text-xs font-medium text-red-600">
+                {cityError}
+              </Input.Error>
+            )}
+          </Input.Label>
 
-            <Input.Label>
-              Bairro
-              <Input.Border>
-                <Input.Text
-                  placeholder="Insira o bairro"
-                  {...register('neighborhood')}
-                />
-              </Input.Border>
-            </Input.Label>
+          <Input.Label>
+            Bairro
+            <Input.Border>
+              <Input.Text
+                placeholder="Insira o bairro"
+                {...register('neighborhood')}
+              />
+            </Input.Border>
+          </Input.Label>
 
-            <Input.Label>
-              Rua
-              <Input.Border>
-                <Input.Text
-                  placeholder="Insira a rua"
-                  {...register('street')}
-                />
-              </Input.Border>
-            </Input.Label>
+          <Input.Label>
+            Rua
+            <Input.Border>
+              <Input.Text placeholder="Insira a rua" {...register('street')} />
+            </Input.Border>
+          </Input.Label>
 
-            <Input.Label>
-              Número
-              <Input.Border>
-                <Input.Text
-                  placeholder="Insira o número"
-                  {...register('addressNumber')}
-                />
-              </Input.Border>
-            </Input.Label>
+          <Input.Label>
+            Número
+            <Input.Border>
+              <Input.Text
+                placeholder="Insira o número"
+                {...register('addressNumber')}
+              />
+            </Input.Border>
+          </Input.Label>
 
-            <Input.Label>
-              Referência
-              <Input.Border>
-                <Input.Text
-                  placeholder="Insira a referência"
-                  {...register('addressReference')}
-                />
-              </Input.Border>
-            </Input.Label>
+          <Input.Label>
+            Referência
+            <Input.Border>
+              <Input.Text
+                placeholder="Insira a referência"
+                {...register('addressReference')}
+              />
+            </Input.Border>
+          </Input.Label>
 
-            <Input.Label>
-              Modelo do carro
-              <Input.Border>
-                <Input.Text
-                  placeholder="Insira o modelo do carro"
-                  {...register('carModel')}
-                />
-              </Input.Border>
-            </Input.Label>
+          <Input.Label>
+            Modelo do carro
+            <Input.Border>
+              <Input.Text
+                placeholder="Insira o modelo do carro"
+                {...register('carModel')}
+              />
+            </Input.Border>
+          </Input.Label>
 
-            <Input.Label>
-              Placa do carro
-              <Input.Border>
-                <Input.Text
-                  placeholder="Insira a placa do carro"
-                  {...register('carIdentifier')}
-                />
-              </Input.Border>
-            </Input.Label>
-          </form>
-        </FormProvider>
+          <Input.Label>
+            Placa do carro
+            <Input.Border>
+              <Input.Text
+                placeholder="Insira a placa do carro"
+                {...register('carIdentifier')}
+              />
+            </Input.Border>
+          </Input.Label>
+        </form>
 
-        <footer className="flex gap-2">
+        <footer className="flex gap-2 mobile:flex-col">
           <Button
             variant={{ colors: 'danger', sizes: 'md', layout: 'fill' }}
             onClick={closeCustomerFormModal}

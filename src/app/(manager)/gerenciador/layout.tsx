@@ -41,7 +41,7 @@ export default function ManagerLayout(props: PropsWithChildren) {
         </Sidebar.List.Root>
       </Sidebar.Root>
 
-      <main className="ml-72 flex min-h-screen w-[calc(100vw-18rem)] flex-col gap-6 p-4">
+      <main className="ml-72 flex min-h-screen w-[calc(100vw-18rem)] flex-col gap-6 p-4 mobile:ml-0 mobile:w-screen">
         {children}
       </main>
     </>

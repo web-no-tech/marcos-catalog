@@ -1,11 +1,7 @@
 import { GroupBase, StylesConfig } from 'react-select'
-import { Option } from '../../../shared/types'
 
-export const defaultStyle: StylesConfig<
-  Option,
-  boolean,
-  GroupBase<Option<string>>
-> = {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const defaultStyle: StylesConfig<any, boolean, GroupBase<any>> = {
   control: (base, state) => ({
     ...base,
     height: '3rem',
