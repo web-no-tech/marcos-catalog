@@ -215,11 +215,11 @@ export function SalesContent() {
     return openDeleteSaleModal()
   }
 
-  const handleDeleteSale = () => {
+  const handleDeleteSale = async () => {
     const toDeleteSaleId = toDeleteSale.data?.id
     if (toDeleteSaleId) {
-      deleteSaleRequest(toDeleteSaleId)
-      handleGetSales()
+      await deleteSaleRequest(toDeleteSaleId)
+      await handleGetSales()
     }
     return closeDeleteSaleModal()
   }

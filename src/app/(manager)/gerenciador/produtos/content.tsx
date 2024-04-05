@@ -231,11 +231,11 @@ export function ProductsContent() {
     return openProductFormModal()
   }
 
-  const handleDeleteProduct = () => {
+  const handleDeleteProduct = async () => {
     const toDeleteProductId = toDeleteProduct.data?.id
     if (toDeleteProductId) {
-      deleteProductRequest(toDeleteProductId)
-      handleGetProducts()
+      await deleteProductRequest(toDeleteProductId)
+      await handleGetProducts()
     }
     return closeDeleteProductModal()
   }

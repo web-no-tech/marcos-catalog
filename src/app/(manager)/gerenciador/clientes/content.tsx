@@ -154,11 +154,11 @@ export function CustomersContent() {
     return openCustomerFormModal()
   }
 
-  const handleDeleteCustomer = () => {
+  const handleDeleteCustomer = async () => {
     const toDeleteCustomerId = toDeleteCustomer.data?.id
     if (toDeleteCustomerId) {
-      deleteCustomerRequest(toDeleteCustomerId)
-      handleGetCustomers()
+      await deleteCustomerRequest(toDeleteCustomerId)
+      await handleGetCustomers()
     }
     return closeDeleteCustomerModal()
   }
