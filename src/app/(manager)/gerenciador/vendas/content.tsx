@@ -166,7 +166,7 @@ export function SalesContent() {
     const saleValue =
       data.products.reduce(
         (accumulator, product) =>
-          accumulator + product.amount * product.finalPrice,
+          accumulator + product.purchaseAmount * product.finalPrice,
         0,
       ) +
       currencyToNumber(data.additional ?? '0') -
@@ -190,7 +190,7 @@ export function SalesContent() {
         saleValue -
         data.products.reduce(
           (accumulator, product) =>
-            accumulator + product.amount * product.costPrice,
+            accumulator + product.purchaseAmount * product.costPrice,
           0,
         ),
     }
