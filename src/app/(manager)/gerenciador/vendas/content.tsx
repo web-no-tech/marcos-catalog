@@ -4,7 +4,12 @@ import { useEffect, useState } from 'react'
 
 import { Button } from '@/app/components/button'
 
-import { LuPlusCircle, LuTrash, LuXCircle } from 'react-icons/lu'
+import {
+  LuDownloadCloud,
+  LuPlusCircle,
+  LuTrash,
+  LuXCircle,
+} from 'react-icons/lu'
 import { z } from 'zod'
 import { Controller, useFieldArray, useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -19,6 +24,8 @@ import { priceFormatter } from '@/utils/price-formatter'
 import { Select } from '../components/select'
 import { Pod } from '../domain/Pod'
 import { currencyToNumber } from '@/utils/currency-to-number'
+import { BasicDocument } from './components/pdf'
+import { PDFDownloadLink } from '@react-pdf/renderer'
 
 const saleSchema = z.object({
   discount: z.string().optional(),
@@ -309,6 +316,28 @@ export function SalesContent() {
               </List.Item.Columns>
 
               <div className="flex w-full flex-col gap-2">
+                <PDFDownloadLink
+                  document={
+                    <BasicDocument
+                      products={sale.products.map((product) => ({
+                        ...product,
+                        price: priceFormatter().format(
+                          product.finalPrice * product.amount,
+                        ),
+                      }))}
+                      total={priceFormatter().format(sale.price)}
+                    />
+                  }
+                  fileName={`${sale.customer.name}-${sale.date}.pdf`}
+                >
+                  <Button
+                    variant={{ colors: 'primary', sizes: 'md', layout: 'fill' }}
+                  >
+                    <LuDownloadCloud className="text-lg" />
+                    Download
+                  </Button>
+                </PDFDownloadLink>
+
                 <Button
                   variant={{ colors: 'danger', sizes: 'md', layout: 'fill' }}
                   onClick={() => handleOpenDeleteSaleModal(sale)}

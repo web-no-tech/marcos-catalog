@@ -6,6 +6,11 @@ export interface Sale {
   additional: number
   paymentMethod: string
   date: string
-  products: Array<{ name: string; id: string; amount: number }>
+  products: Array<{
+    name: string
+    id: string
+    amount: number
+    finalPrice: number
+  }>
   customer: { name: string; id: string }
 }

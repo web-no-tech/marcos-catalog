@@ -182,7 +182,7 @@ export function CustomersContent() {
       street: toUpdateCustomer.data?.street,
       addressNumber: toUpdateCustomer.data?.addressNumber,
       addressReference: toUpdateCustomer.data?.street,
-      carIdentifier: toUpdateCustomer.data?.carIdentifier,
+      carIdentifier: toUpdateCustomer.data?.street,
       carModel: toUpdateCustomer.data?.carModel,
       document: toUpdateCustomer.data?.document,
     })
