@@ -54,11 +54,16 @@ export function BasicDocument({ products, total }: Props) {
           <Text style={styles.title}>Produtos</Text>
 
           <View style={styles.list}>
-            {products.map((product) => {
+            {products.map((product, index) => {
               return (
                 <View
                   key={product.id}
-                  style={[styles.listItem, { backgroundColor: '#eee' }]}
+                  style={[
+                    styles.listItem,
+                    {
+                      backgroundColor: index % 2 === 0 ? '#e6e6e6' : '#f5f5f5',
+                    },
+                  ]}
                 >
                   <Text style={styles.itemText}>
                     {`${product.amount}x ${product.name}`}

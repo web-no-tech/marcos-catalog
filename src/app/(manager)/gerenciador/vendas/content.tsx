@@ -182,7 +182,7 @@ export function SalesContent() {
       products: data.products.map((product) => ({
         id: product.id,
         name: product.name,
-        amount: product.amount,
+        amount: product.purchaseAmount,
         finalPrice: product.finalPrice,
         costPrice: product.costPrice,
       })),
@@ -353,7 +353,7 @@ export function SalesContent() {
 
       <dialog
         ref={saleFormModalRef}
-        className="personalized-scrollbar display-none w-2/5 min-w-96 max-w-[35rem] flex-col gap-4 overflow-visible rounded-lg p-6 shadow-md outline-none backdrop:bg-neutral-700/40 backdrop:backdrop-blur-sm open:flex open:opacity-100"
+        className="personalized-scrollbar display-none w-2/5 min-w-96 max-w-[35rem] flex-col gap-4 overflow-auto rounded-lg p-6 shadow-md outline-none backdrop:bg-neutral-700/40 backdrop:backdrop-blur-sm open:flex open:opacity-100"
         onClose={onCloseSaleFormModal}
       >
         <header className="flex items-center justify-between border-b border-b-neutral-200 pb-4">
