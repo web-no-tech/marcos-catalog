@@ -17,7 +17,14 @@ import { useDeleteSaleModal } from './hooks/use-delete-sale-modal'
 import { useSaleFormModal } from './hooks/use-sale-form-modal'
 import * as Input from '../components/input'
 import { firebaseDb } from '@/lib/firebase'
-import { addDoc, collection, deleteDoc, doc, getDocs } from 'firebase/firestore'
+import {
+  addDoc,
+  collection,
+  deleteDoc,
+  doc,
+  getDocs,
+  setDoc,
+} from 'firebase/firestore'
 import List from './components/list'
 import { Sale } from '../domain/Sale'
 import { priceFormatter } from '@/utils/price-formatter'
@@ -26,6 +33,7 @@ import { Pod } from '../domain/Pod'
 import { currencyToNumber } from '@/utils/currency-to-number'
 import { BasicDocument } from './components/pdf'
 import { PDFDownloadLink } from '@react-pdf/renderer'
+import { CreateProductData } from '../produtos/content'
 
 const saleSchema = z.object({
   discount: z.string().optional(),
@@ -36,17 +44,9 @@ const saleSchema = z.object({
     { name: z.string(), id: z.string() },
     { required_error: 'Selecione o cliente' },
   ),
-  products: z.array(
-    z.object({
-      id: z.string(),
-      name: z.string(),
-      amount: z.number(),
-      costPrice: z.number(),
-      finalPrice: z.number(),
-      purchaseAmount: z.number(),
-    }),
-    { required_error: 'Selecione pelo menos um produto' },
-  ),
+  products: z.array(z.custom<Pod & { purchaseAmount: number }>(), {
+    required_error: 'Selecione pelo menos um produto',
+  }),
 })
 
 export type SaleForm = z.infer<typeof saleSchema>
@@ -105,6 +105,11 @@ const getProductsRequest = async () => {
     label: doc.get('name'),
     value: doc.id,
   }))
+}
+
+function updateProductRequest(id: string, data: CreateProductData) {
+  const product = doc(firebaseDb, 'products', id)
+  return setDoc(product, data)
 }
 
 export function SalesContent() {
@@ -194,6 +199,14 @@ export function SalesContent() {
           0,
         ),
     }
+
+    const updateProductsPromises = data.products.map((product) =>
+      updateProductRequest(product.id, {
+        ...product,
+        amount: product.amount - product.purchaseAmount,
+      }),
+    )
+    await Promise.all(updateProductsPromises)
 
     if (!toUpdateSaleId) {
       await createSaleRequest(normalizedSale)
@@ -473,13 +486,21 @@ export function SalesContent() {
               return (
                 <Input.Label>
                   Produtos*
-                  <Select<[]>
+                  <Select
                     placeholder="Selecione os produtos"
                     noOptionsMessage={() => 'Nenhuma opção'}
-                    options={products}
-                    onChange={(option: Pod) => {
+                    options={(() => {
+                      const selectedProducts = watch('products')?.map(
+                        (product) => product.id,
+                      )
+
+                      return products.filter(
+                        (product) => !selectedProducts.includes(product.id),
+                      )
+                    })()}
+                    onChange={(option: Pod) =>
                       append({ ...option, purchaseAmount: 1 })
-                    }}
+                    }
                     value={value?.length ? value[value.length - 1] : undefined}
                     ref={ref}
                   />
@@ -495,7 +516,7 @@ export function SalesContent() {
             <ul className="col-span-2 flex flex-col gap-4 mobile:col-span-1">
               {fields.map((product, index) => (
                 <li
-                  key={crypto.randomUUID()}
+                  key={product.id}
                   className="flex items-center justify-between gap-6"
                 >
                   <span className="flex items-center gap-2">
@@ -513,16 +534,16 @@ export function SalesContent() {
                       return (
                         <Input.Border className="w-20">
                           <Input.Text
+                            type="number"
                             min={1}
                             max={product.amount}
-                            type="number"
-                            onChange={(event) => {
+                            onChange={(event) =>
                               onChange(
                                 event.target.value
                                   ? parseInt(event.target.value)
                                   : '',
                               )
-                            }}
+                            }
                             {...field}
                           />
                         </Input.Border>

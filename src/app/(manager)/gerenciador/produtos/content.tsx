@@ -68,7 +68,7 @@ type CreatePodData = {
   puffs: string
 }
 
-interface CreateProductData extends Partial<CreatePodData> {
+export interface CreateProductData extends Partial<CreatePodData> {
   amount: number
   costPrice: number
   finalPrice: number
