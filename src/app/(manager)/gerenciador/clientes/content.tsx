@@ -78,6 +78,8 @@ async function getCustomersRequest() {
 export function CustomersContent() {
   const [customers, setCustomers] = useState<Customer[]>([])
 
+  const [isLoading, setIsLoading] = useState(false)
+
   const {
     deleteCustomerModalRef,
     closeDeleteCustomerModal,
@@ -164,8 +166,15 @@ export function CustomersContent() {
   }
 
   const handleGetCustomers = async () => {
-    const loadedCustomers = await getCustomersRequest()
-    return setCustomers(loadedCustomers)
+    try {
+      setIsLoading(true)
+      const loadedCustomers = await getCustomersRequest()
+      return setCustomers(loadedCustomers)
+    } catch (error) {
+      alert('Erro ao buscar os clientes')
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   useEffect(() => {
@@ -181,12 +190,20 @@ export function CustomersContent() {
       neighborhood: toUpdateCustomer.data?.neighborhood,
       street: toUpdateCustomer.data?.street,
       addressNumber: toUpdateCustomer.data?.addressNumber,
-      addressReference: toUpdateCustomer.data?.street,
-      carIdentifier: toUpdateCustomer.data?.street,
+      addressReference: toUpdateCustomer.data?.addressReference,
+      carIdentifier: toUpdateCustomer.data?.carIdentifier,
       carModel: toUpdateCustomer.data?.carModel,
       document: toUpdateCustomer.data?.document,
     })
   }, [toUpdateCustomer.data])
+
+  if (isLoading) {
+    return (
+      <div className="flex w-full flex-1 flex-col items-center justify-center">
+        <p className="text-lg font-normal text-neutral-600">Carregando...</p>
+      </div>
+    )
+  }
 
   return (
     <>

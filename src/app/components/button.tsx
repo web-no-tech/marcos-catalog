@@ -8,6 +8,8 @@ const button = tv({
     colors: {
       primary: 'bg-neutral-700 text-neutral-50 hover:bg-neutral-800',
       danger: 'bg-red-600 text-neutral-50 hover:bg-red-800',
+      outline:
+        'bg-transparente border border-solid border-neutral-700 text-neutral-700 hover:border-neutral-800 hover:text-neutral-800',
     },
     sizes: {
       md: 'min-w-56 px-6 py-[0.75rem]',

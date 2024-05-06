@@ -29,6 +29,8 @@ import {
   deleteDoc,
   doc,
   getDocs,
+  orderBy,
+  query,
   setDoc,
 } from 'firebase/firestore'
 import { getDownloadURL, ref, uploadBytes } from 'firebase/storage'
@@ -37,6 +39,11 @@ import { BaseProduct } from '../domain/BaseProduct'
 import List from './components/list'
 import { priceFormatter } from '@/utils/price-formatter'
 import { Pod } from '../domain/Pod'
+
+interface OrderBy {
+  label: string
+  value: `${string}-${'asc' | 'desc'}`
+}
 
 const productSchema = z.object({
   amount: z
@@ -59,7 +66,13 @@ const productSchema = z.object({
   ...podSchema,
 })
 
+const filterSchema = z.object({
+  orderBy: z.custom<OrderBy>(),
+})
+
 export type ProductForm = z.infer<typeof productSchema>
+
+export type FilterForm = z.infer<typeof filterSchema>
 
 type CreatePodData = {
   flavor: { name: string; id: string }
@@ -75,6 +88,10 @@ export interface CreateProductData extends Partial<CreatePodData> {
   category: { name: string; id: string }
   images: string[]
   name: string
+}
+
+interface GetProductParams {
+  order: OrderBy['value']
 }
 
 async function uploadProductImage(image: File) {
@@ -98,8 +115,13 @@ function deleteProductRequest(productId: string) {
   return deleteDoc(doc(firebaseDb, 'products/' + productId))
 }
 
-async function getProductsRequest() {
-  const snapshot = await getDocs(collection(firebaseDb, 'products'))
+async function getProductsRequest({ order }: GetProductParams) {
+  const snapshot = await getDocs(
+    query(
+      collection(firebaseDb, 'products'),
+      orderBy(order.split('-')[0], order.split('-')[1] as 'asc' | 'desc'),
+    ),
+  )
 
   const productsWithImages = []
 
@@ -128,6 +150,8 @@ async function getProductsRequest() {
 export function ProductsContent() {
   const [products, setProducts] = useState<Pod[]>([])
 
+  const [isLoading, setIsLoading] = useState(false)
+
   const {
     deleteProductModalRef,
     closeDeleteProductModal,
@@ -144,6 +168,10 @@ export function ProductsContent() {
 
   const productForm = useForm<ProductForm>({
     resolver: zodResolver(productSchema),
+  })
+
+  const filterForm = useForm<FilterForm>({
+    resolver: zodResolver(filterSchema),
   })
 
   const {
@@ -164,6 +192,8 @@ export function ProductsContent() {
     productCategory: watch('category')?.label,
     productImages: watch('images'),
   }
+
+  const { orderBy } = filterForm.watch()
 
   const onSubmitProductForm = async (data: ProductForm) => {
     const uploadProductImagePromises = data.images.map((image) => {
@@ -241,8 +271,18 @@ export function ProductsContent() {
   }
 
   const handleGetProducts = async () => {
-    const loadedProducts = await getProductsRequest()
-    return setProducts(loadedProducts)
+    try {
+      setIsLoading(true)
+      const params: GetProductParams = {
+        order: filterForm.getValues('orderBy.value') ?? 'name-asc',
+      }
+      const loadedProducts = await getProductsRequest(params)
+      return setProducts(loadedProducts)
+    } catch (error) {
+      alert('Erro ao buscar os produtos')
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   const renderCategoryForm = () => {
@@ -257,7 +297,7 @@ export function ProductsContent() {
 
   useEffect(() => {
     handleGetProducts()
-  }, [])
+  }, [orderBy])
 
   useEffect(() => {
     reset({
@@ -286,6 +326,14 @@ export function ProductsContent() {
     })
   }, [toUpdateProduct.data])
 
+  if (isLoading) {
+    return (
+      <div className="flex w-full flex-1 flex-col items-center justify-center">
+        <p className="text-lg font-normal text-neutral-600">Carregando...</p>
+      </div>
+    )
+  }
+
   return (
     <>
       <section className="flex flex-col gap-6">
@@ -293,14 +341,47 @@ export function ProductsContent() {
           <h2 className="text-2xl font-semibold text-neutral-700">
             Lista de Produtos
           </h2>
-          <Button
-            variant={{ colors: 'primary', sizes: 'md' }}
-            onClick={() => handleOpenProductFormModal()}
-            className="mobile:w-full"
-          >
-            <LuPlusCircle className="text-lg" />
-            Novo produto
-          </Button>
+
+          <div className="flex items-end gap-4 mobile:w-full mobile:flex-col">
+            <Controller
+              name="orderBy"
+              control={filterForm.control}
+              render={({ field, fieldState: { error } }) => {
+                return (
+                  <Input.Label className="mobile:w-full">
+                    Ordenação
+                    <Select
+                      placeholder="Ordenar por"
+                      noOptionsMessage={() => 'Nenhuma opção'}
+                      options={[
+                        { label: 'Nome - [A-z]', value: 'name-asc' },
+                        { label: 'Nome - [Z-a]', value: 'name-desc' },
+                        { label: 'Estoque - [1-9]', value: 'amount-asc' },
+                        { label: 'Estoque - [9-1]', value: 'amount-desc' },
+                      ]}
+                      defaultValue={{
+                        label: 'Nome - [A-z]',
+                        value: 'name-asc',
+                      }}
+                      {...field}
+                    />
+                    {!!error?.message && (
+                      <Input.Error>{error.message}</Input.Error>
+                    )}
+                  </Input.Label>
+                )
+              }}
+            />
+
+            <Button
+              variant={{ colors: 'primary', sizes: 'md' }}
+              onClick={() => handleOpenProductFormModal()}
+              className="mobile:w-full"
+            >
+              <LuPlusCircle className="text-lg" />
+              Novo produto
+            </Button>
+          </div>
         </nav>
 
         <List.Root>

@@ -115,6 +115,8 @@ function updateProductRequest(id: string, data: CreateProductData) {
 export function SalesContent() {
   const [sales, setSales] = useState<Sale[]>([])
 
+  const [isLoading, setIsLoading] = useState(false)
+
   const [customers, setCustomers] = useState<CreateSaleData['customer'][]>([])
   const [products, setProducts] = useState<Pod[]>([])
 
@@ -238,8 +240,15 @@ export function SalesContent() {
   }
 
   const handleGetSales = async () => {
-    const loadedSales = await getSalesRequest()
-    return setSales(loadedSales)
+    try {
+      setIsLoading(true)
+      const loadedSales = await getSalesRequest()
+      return setSales(loadedSales)
+    } catch (error) {
+      alert('Erro ao buscar as vendas')
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   useEffect(() => {
@@ -247,6 +256,14 @@ export function SalesContent() {
     handleGetCustomers()
     handleGetProducts()
   }, [])
+
+  if (isLoading) {
+    return (
+      <div className="flex w-full flex-1 flex-col items-center justify-center">
+        <p className="text-lg font-normal text-neutral-600">Carregando...</p>
+      </div>
+    )
+  }
 
   return (
     <>

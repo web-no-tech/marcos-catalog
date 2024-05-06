@@ -29,6 +29,7 @@ export const defaultStyle: StylesConfig<any, boolean, GroupBase<any>> = {
     border: '1px solid #A3A3A3',
     borderRadius: '0.5rem',
     boxShadow: 'none',
+    zIndex: 999,
   }),
   menuList: (base) => ({
     ...base,
