@@ -28,6 +28,11 @@ export default function ManagerLayout(props: PropsWithChildren) {
             to="/gerenciador/clientes"
           />
           <Sidebar.List.Item
+            icon={<LuUser />}
+            label="Vendedores"
+            to="/gerenciador/vendedores"
+          />
+          <Sidebar.List.Item
             icon={<LuLineChart />}
             label="Vendas"
             to="/gerenciador/vendas"

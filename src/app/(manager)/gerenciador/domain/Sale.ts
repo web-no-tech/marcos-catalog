@@ -13,4 +13,5 @@ export interface Sale {
     finalPrice: number
   }>
   customer: { name: string; id: string }
+  seller: { name: string; id: string }
 }

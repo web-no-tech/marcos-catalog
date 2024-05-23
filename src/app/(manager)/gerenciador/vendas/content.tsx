@@ -44,6 +44,10 @@ const saleSchema = z.object({
     { name: z.string(), id: z.string() },
     { required_error: 'Selecione o cliente' },
   ),
+  seller: z.object(
+    { name: z.string(), id: z.string() },
+    { required_error: 'Selecione o vendedor' },
+  ),
   products: z.array(z.custom<Pod & { purchaseAmount: number }>(), {
     required_error: 'Selecione pelo menos um produto',
   }),
@@ -67,6 +71,7 @@ interface CreateSaleData {
   paymentMethod: string
   products: Array<ProductPreview>
   customer: { name: string; id: string }
+  seller: { name: string; id: string }
   date: string
 }
 
@@ -97,6 +102,16 @@ const getNormalizedCustomersRequest = async () => {
   }))
 }
 
+const getNormalizedSellersRequest = async () => {
+  const snapshot = await getDocs(collection(firebaseDb, 'sellers'))
+  return snapshot.docs.map((doc) => ({
+    id: doc.id,
+    value: doc.id,
+    name: doc.get('name'),
+    label: doc.get('name'),
+  }))
+}
+
 const getProductsRequest = async () => {
   const snapshot = await getDocs(collection(firebaseDb, 'products'))
   return snapshot.docs.map((doc) => ({
@@ -118,6 +133,7 @@ export function SalesContent() {
   const [isLoading, setIsLoading] = useState(false)
 
   const [customers, setCustomers] = useState<CreateSaleData['customer'][]>([])
+  const [sellers, setSellers] = useState<CreateSaleData['seller'][]>([])
   const [products, setProducts] = useState<Pod[]>([])
 
   const {
@@ -155,6 +171,10 @@ export function SalesContent() {
     const loadedCustomers = await getNormalizedCustomersRequest()
     return setCustomers(loadedCustomers)
   }
+  const handleGetSellers = async () => {
+    const loadedSellers = await getNormalizedSellersRequest()
+    return setSellers(loadedSellers)
+  }
   const handleGetProducts = async () => {
     const loadedProducts = await getProductsRequest()
     return setProducts(loadedProducts)
@@ -185,6 +205,7 @@ export function SalesContent() {
       discount: currencyToNumber(data.discount ?? '0'),
       paymentMethod: data.paymentMethod,
       customer: data.customer,
+      seller: data.seller,
       date: data.date,
       products: data.products.map((product) => ({
         id: product.id,
@@ -254,6 +275,7 @@ export function SalesContent() {
   useEffect(() => {
     handleGetSales()
     handleGetCustomers()
+    handleGetSellers()
     handleGetProducts()
   }, [])
 
@@ -311,6 +333,15 @@ export function SalesContent() {
         <List.Root>
           {sales.map((sale) => (
             <List.Item.Root key={sale.id}>
+              <List.Item.Columns>
+                <List.Item.Column.Root>
+                  <List.Item.Column.Title>Vendedor</List.Item.Column.Title>
+                  <List.Item.Column.Content>
+                    {sale.seller.name}
+                  </List.Item.Column.Content>
+                </List.Item.Column.Root>
+              </List.Item.Columns>
+
               <List.Item.Columns>
                 <List.Item.Column.Root>
                   <List.Item.Column.Title>Cliente</List.Item.Column.Title>
@@ -497,11 +528,32 @@ export function SalesContent() {
           />
 
           <Controller
+            name="seller"
+            control={control}
+            render={({ field, fieldState: { error } }) => {
+              return (
+                <Input.Label>
+                  Vendedor*
+                  <Select<[]>
+                    placeholder="Selecione o vendedor"
+                    noOptionsMessage={() => 'Nenhuma opção'}
+                    options={sellers}
+                    {...field}
+                  />
+                  {!!error?.message && (
+                    <Input.Error>{error.message}</Input.Error>
+                  )}
+                </Input.Label>
+              )
+            }}
+          />
+
+          <Controller
             name="products"
             control={control}
             render={({ field: { ref, value }, fieldState: { error } }) => {
               return (
-                <Input.Label>
+                <Input.Label className="col-span-2">
                   Produtos*
                   <Select
                     placeholder="Selecione os produtos"
