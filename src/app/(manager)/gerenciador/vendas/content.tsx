@@ -47,7 +47,7 @@ const saleSchema = z.object({
     { required_error: 'Selecione o cliente' },
   ),
   seller: z.object(
-    { name: z.string(), id: z.string() },
+    { name: z.string(), id: z.string(), pix: z.string(), bank: z.string() },
     { required_error: 'Selecione o vendedor' },
   ),
   products: z.array(z.custom<Pod & { purchaseAmount: number }>(), {
@@ -96,7 +96,7 @@ interface CreateSaleData {
   paymentMethod: string
   products: Array<ProductPreview>
   customer: { name: string; id: string }
-  seller: { name: string; id: string }
+  seller: { name: string; id: string; pix: string; bank: string }
   date: string
 }
 
@@ -154,6 +154,8 @@ const getNormalizedSellersRequest = async () => {
     value: doc.id,
     name: doc.get('name'),
     label: doc.get('name'),
+    pix: doc.get('pix'),
+    bank: doc.get('bank'),
   }))
 }
 
@@ -372,7 +374,7 @@ export function SalesContent() {
             control={filterForm.control}
             render={({ field, fieldState: { error } }) => {
               return (
-                <Input.Label className="flex-1">
+                <Input.Label className="max-w-[20rem] flex-1 mobile:max-w-full">
                   Vendedor
                   <Select
                     placeholder="Selecione um vendedor"
@@ -394,7 +396,7 @@ export function SalesContent() {
             control={filterForm.control}
             render={({ field, fieldState: { error } }) => {
               return (
-                <Input.Label className="flex-1">
+                <Input.Label className="max-w-[20rem] flex-1 mobile:max-w-full">
                   Cliente
                   <Select
                     placeholder="Selecione um cliente"
@@ -416,7 +418,7 @@ export function SalesContent() {
             control={filterForm.control}
             render={({ field, fieldState: { error } }) => {
               return (
-                <Input.Label className="flex-1">
+                <Input.Label className="max-w-[20rem] flex-1 mobile:max-w-full">
                   Produto
                   <Select
                     placeholder="Selecione um produto"
@@ -517,6 +519,12 @@ export function SalesContent() {
                         ),
                       }))}
                       total={priceFormatter().format(sale.price)}
+                      seller={{
+                        name: sale.seller.name,
+                        pix: sale.seller.pix,
+                        bank: sale.seller.bank,
+                      }}
+                      customer={sale.customer.name}
                     />
                   }
                   fileName={`${sale.customer.name}-${sale.date}.pdf`}

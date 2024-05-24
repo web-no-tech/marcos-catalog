@@ -25,12 +25,16 @@ import { Seller } from '../domain/Seller'
 
 const sellerSchema = z.object({
   name: z.string().min(1, 'Insira o nome do cliente'),
+  pix: z.string().min(1, 'Insira a chave pix'),
+  bank: z.string().min(1, 'Insira o banco'),
 })
 
 export type SellerForm = z.infer<typeof sellerSchema>
 
 interface CreateSellerData {
   name: string
+  pix: string
+  bank: string
 }
 
 function createSellerRequest(data: CreateSellerData) {
@@ -93,6 +97,8 @@ export function SellersContent() {
     const toUpdateSellerId = toUpdateSeller.data?.id
     const normalizedSeller: CreateSellerData = {
       name: data.name,
+      pix: data.pix,
+      bank: data.bank,
     }
 
     if (toUpdateSellerId) {
@@ -151,6 +157,8 @@ export function SellersContent() {
   useEffect(() => {
     reset({
       name: toUpdateSeller.data?.name,
+      pix: toUpdateSeller.data?.pix,
+      bank: toUpdateSeller.data?.bank,
     })
   }, [toUpdateSeller.data])
 
@@ -226,13 +234,40 @@ export function SellersContent() {
 
         <form
           id="seller-form"
-          className="flex flex-1"
+          className="flex flex-col gap-4"
           onSubmit={handleSubmit(onSubmitSellerForm)}
         >
           <Input.Label className="flex-1">
             Nome*
             <Input.Border>
               <Input.Text placeholder="Insira o nome" {...register('name')} />
+            </Input.Border>
+            {!!nameError && (
+              <Input.Error className="text-xs font-medium text-red-600">
+                {nameError}
+              </Input.Error>
+            )}
+          </Input.Label>
+
+          <Input.Label className="flex-1">
+            Chave PIX*
+            <Input.Border>
+              <Input.Text
+                placeholder="Insira a chave PIX"
+                {...register('pix')}
+              />
+            </Input.Border>
+            {!!nameError && (
+              <Input.Error className="text-xs font-medium text-red-600">
+                {nameError}
+              </Input.Error>
+            )}
+          </Input.Label>
+
+          <Input.Label className="flex-1">
+            Banco*
+            <Input.Border>
+              <Input.Text placeholder="Insira o banco" {...register('bank')} />
             </Input.Border>
             {!!nameError && (
               <Input.Error className="text-xs font-medium text-red-600">

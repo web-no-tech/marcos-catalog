@@ -4,6 +4,16 @@ const styles = StyleSheet.create({
   page: {
     color: '#000',
   },
+  header: {
+    gap: 4,
+    margin: 20,
+    borderWidth: 1,
+    borderColor: '#363636',
+  },
+  saleInfo: {
+    fontSize: 12,
+    padding: 4,
+  },
   section: {
     display: 'flex',
     flexDirection: 'column',
@@ -44,12 +54,46 @@ const styles = StyleSheet.create({
 interface Props {
   products: { name: string; price: string; amount: number; id: string }[]
   total: string
+  seller: {
+    name: string
+    pix: string
+    bank: string
+  }
+  customer: string
 }
 
-export function BasicDocument({ products, total }: Props) {
+export function BasicDocument({ products, total, customer, seller }: Props) {
   return (
     <Document>
       <Page size="A4" style={styles.page}>
+        <View style={styles.header}>
+          <Text
+            style={[
+              styles.saleInfo,
+              { borderBottomWidth: 1, borderBottomColor: '#363636' },
+            ]}
+          >
+            Cliente: {customer}
+          </Text>
+          <Text
+            style={[
+              styles.saleInfo,
+              { borderBottomWidth: 1, borderBottomColor: '#363636' },
+            ]}
+          >
+            Vendedor: {seller.name}
+          </Text>
+          <Text
+            style={[
+              styles.saleInfo,
+              { borderBottomWidth: 1, borderBottomColor: '#363636' },
+            ]}
+          >
+            Chave PIX: {seller.pix}
+          </Text>
+          <Text style={styles.saleInfo}>Banco: {seller.bank}</Text>
+        </View>
+
         <View style={styles.section}>
           <Text style={styles.title}>Produtos</Text>
 
