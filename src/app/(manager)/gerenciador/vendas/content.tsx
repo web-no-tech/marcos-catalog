@@ -23,7 +23,9 @@ import {
   deleteDoc,
   doc,
   getDocs,
+  query,
   setDoc,
+  where,
 } from 'firebase/firestore'
 import List from './components/list'
 import { Sale } from '../domain/Sale'
@@ -53,7 +55,30 @@ const saleSchema = z.object({
   }),
 })
 
+const filterSchema = z.object({
+  seller: z
+    .object({
+      label: z.string(),
+      value: z.string(),
+    })
+    .optional(),
+  product: z
+    .object({
+      label: z.string(),
+      value: z.string(),
+    })
+    .optional(),
+  customer: z
+    .object({
+      label: z.string(),
+      value: z.string(),
+    })
+    .optional(),
+})
+
 export type SaleForm = z.infer<typeof saleSchema>
+
+export type FilterForm = z.infer<typeof filterSchema>
 
 interface ProductPreview {
   name: string
@@ -75,6 +100,12 @@ interface CreateSaleData {
   date: string
 }
 
+interface SaleFilter {
+  seller: string | undefined
+  product: string | undefined
+  customer: string | undefined
+}
+
 function createSaleRequest(data: CreateSaleData) {
   return addDoc(collection(firebaseDb, 'sales'), data)
 }
@@ -83,8 +114,22 @@ function deleteSaleRequest(saleId: string) {
   return deleteDoc(doc(firebaseDb, 'sales/' + saleId))
 }
 
-async function getSalesRequest() {
-  const snapshot = await getDocs(collection(firebaseDb, 'sales'))
+async function getSalesRequest({ seller, product, customer }: SaleFilter) {
+  const and = []
+
+  if (seller) {
+    and.push(where('seller.id', '==', seller))
+  }
+
+  if (product) {
+    and.push(where('product.id', '==', product))
+  }
+
+  if (customer) {
+    and.push(where('customer.id', '==', customer))
+  }
+
+  const snapshot = await getDocs(query(collection(firebaseDb, 'sales'), ...and))
 
   return snapshot.docs.map((doc) => ({
     ...(doc.data() as Sale),
@@ -154,6 +199,10 @@ export function SalesContent() {
     resolver: zodResolver(saleSchema),
   })
 
+  const filterForm = useForm<FilterForm>({
+    resolver: zodResolver(filterSchema),
+  })
+
   const {
     handleSubmit,
     formState: { errors },
@@ -161,6 +210,12 @@ export function SalesContent() {
     control,
     watch,
   } = saleForm
+
+  const {
+    seller: sellerFilter,
+    product: productFilter,
+    customer: customerFilter,
+  } = filterForm.watch()
 
   const { fields, append, remove } = useFieldArray({
     control,
@@ -263,7 +318,11 @@ export function SalesContent() {
   const handleGetSales = async () => {
     try {
       setIsLoading(true)
-      const loadedSales = await getSalesRequest()
+      const loadedSales = await getSalesRequest({
+        seller: sellerFilter?.value,
+        product: productFilter?.value,
+        customer: customerFilter?.value,
+      })
       return setSales(loadedSales)
     } catch (error) {
       alert('Erro ao buscar as vendas')
@@ -273,11 +332,14 @@ export function SalesContent() {
   }
 
   useEffect(() => {
-    handleGetSales()
     handleGetCustomers()
     handleGetSellers()
     handleGetProducts()
   }, [])
+
+  useEffect(() => {
+    handleGetSales()
+  }, [sellerFilter, productFilter, customerFilter])
 
   if (isLoading) {
     return (
@@ -303,6 +365,74 @@ export function SalesContent() {
             Nova venda
           </Button>
         </nav>
+
+        <div className="flex gap-4 mobile:flex-col">
+          <Controller
+            name="seller"
+            control={filterForm.control}
+            render={({ field, fieldState: { error } }) => {
+              return (
+                <Input.Label className="flex-1">
+                  Vendedor
+                  <Select
+                    placeholder="Selecione um vendedor"
+                    noOptionsMessage={() => 'Nenhuma opção'}
+                    options={sellers}
+                    isClearable
+                    {...field}
+                  />
+                  {!!error?.message && (
+                    <Input.Error>{error.message}</Input.Error>
+                  )}
+                </Input.Label>
+              )
+            }}
+          />
+
+          <Controller
+            name="customer"
+            control={filterForm.control}
+            render={({ field, fieldState: { error } }) => {
+              return (
+                <Input.Label className="flex-1">
+                  Cliente
+                  <Select
+                    placeholder="Selecione um cliente"
+                    noOptionsMessage={() => 'Nenhuma opção'}
+                    options={customers}
+                    isClearable
+                    {...field}
+                  />
+                  {!!error?.message && (
+                    <Input.Error>{error.message}</Input.Error>
+                  )}
+                </Input.Label>
+              )
+            }}
+          />
+
+          <Controller
+            name="product"
+            control={filterForm.control}
+            render={({ field, fieldState: { error } }) => {
+              return (
+                <Input.Label className="flex-1">
+                  Produto
+                  <Select
+                    placeholder="Selecione um produto"
+                    noOptionsMessage={() => 'Nenhuma opção'}
+                    options={products}
+                    isClearable
+                    {...field}
+                  />
+                  {!!error?.message && (
+                    <Input.Error>{error.message}</Input.Error>
+                  )}
+                </Input.Label>
+              )
+            }}
+          />
+        </div>
 
         <div className="flex gap-12">
           <div>
@@ -553,7 +683,7 @@ export function SalesContent() {
             control={control}
             render={({ field: { ref, value }, fieldState: { error } }) => {
               return (
-                <Input.Label className="col-span-2">
+                <Input.Label className="col-span-2 mobile:col-span-1">
                   Produtos*
                   <Select
                     placeholder="Selecione os produtos"
