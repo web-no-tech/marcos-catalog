@@ -24,7 +24,7 @@ import List from './components/list'
 import { Seller } from '../domain/Seller'
 
 const sellerSchema = z.object({
-  name: z.string().min(1, 'Insira o nome do cliente'),
+  name: z.string().min(1, 'Insira o nome do vendedor'),
   pix: z.string().min(1, 'Insira a chave pix'),
   bank: z.string().min(1, 'Insira o banco'),
 })
@@ -89,8 +89,10 @@ export function SellersContent() {
     reset,
   } = sellerForm
 
-  const { nameError } = {
+  const { nameError, pixError, bankError } = {
     nameError: errors.name?.message,
+    pixError: errors.pix?.message,
+    bankError: errors.bank?.message,
   }
 
   const onSubmitSellerForm = async (data: SellerForm) => {
@@ -257,9 +259,9 @@ export function SellersContent() {
                 {...register('pix')}
               />
             </Input.Border>
-            {!!nameError && (
+            {!!pixError && (
               <Input.Error className="text-xs font-medium text-red-600">
-                {nameError}
+                {pixError}
               </Input.Error>
             )}
           </Input.Label>
@@ -269,9 +271,9 @@ export function SellersContent() {
             <Input.Border>
               <Input.Text placeholder="Insira o banco" {...register('bank')} />
             </Input.Border>
-            {!!nameError && (
+            {!!bankError && (
               <Input.Error className="text-xs font-medium text-red-600">
-                {nameError}
+                {bankError}
               </Input.Error>
             )}
           </Input.Label>
